@@ -15,29 +15,44 @@
 
 (def urls (get-imgur-urls reddit-liked-url))
 
-; TODO: just check if '/a' appears in url
+
 (defn is-album? [imgur-url]
   "Returns true if the url points to an album"
-  (let [response
-        (client/get imgur-url
-                    {:headers {"Authorization" (str "Client-ID " imgur-client-id)}
-                     :throw-exceptions false})]
-    (not (= 404 (:status response)))))
+  (re-find #"imgur.com/a" imgur-url))
 
-;; (defn expand-album-url [imgur-url]
-;;   "If imgur-url is an album, return the urls of all its images"
-;;   (if (is-album? imgur-url)
-;;     (get-image-urls-from-album imgur-url)
-;;     imgur-url))
+(assert (is-album? "http://imgur.com/a/m9ki8"))
+(assert (not (is-album? "http://i.imgur.com/ggMoxgg.jpg"))
+
+
+(defn expand-album-url [imgur-url]
+  "If imgur-url is an album, return the urls of all its images"
+  (if (is-album? imgur-url)
+    (get-image-urls-from-album imgur-url)
+    [imgur-url]))
+
+#_(expand-album-url "http://imgur.com/a/m9ki8")
+#_(expand-album-url "http://imgur.com/not-an-album-yo")
+#_(expand-album-url "http://i.imgur.com/ggMoxgg.jpg")
+
 
 (defn get-image-urls-from-album [imgur-url]
   "Given a url for an imgur album, return the urls of all its images."
   (let [album-id (last (str/split imgur-url #"/"))
         api-url (str "https://api.imgur.com/3/album/" album-id "/images")
         response (client/get api-url
-                {:headers {"Authorization" (str "Client-ID " imgur-client-id)}})
+                             {:headers {"Authorization" (str "Client-ID " imgur-client-id)}})
         parsed-response (json/read-str (:body response))
         data (get parsed-response "data")]
     (map #(get % "link") data)))
 
-(get-image-urls-from-album "http://imgur.com/a/m9ki8")
+
+(defn expanded-urls [imgur-urls]
+  "Given a seq af imgur urls, replace album urls with urls of all their images.
+  Leave non-album urls unmolested."
+  (mapcat expand-album-url imgur-urls))
+
+(expanded-urls ["http://imgur.com/a/m9ki8"
+                "http://i.imgur.com/ggMoxgg.jpg"])
+
+
+
