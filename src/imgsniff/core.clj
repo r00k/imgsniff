@@ -5,7 +5,6 @@
             [clojure.java.io :as io]))
 
 (def imgur-client-id "5e439e50bdd53fc")
-(def my-reddit-url "http://www.reddit.com/user/friendlyproject/liked.json")
 
 (defn get-urls [reddit-liked-url]
   "Given the url to a user's 'liked' reddit page, return the urls of all
@@ -44,6 +43,7 @@
 (defn save-file-at-url [url]
   "Saves a file given a url. Chooses a file name based on url."
   (with-open [in (io/input-stream url)
+              ; TODO: how do I make this go into a different directory?
               out (io/output-stream (last (str/split url #"/")))]
     (io/copy in out)))
 
